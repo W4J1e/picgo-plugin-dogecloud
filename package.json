@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-todogecloud",
-  "version": "0.0.4",
+  "version": "1.0.0",
   "description": "picgo upload plugin for dogecloud",
   "main": "dist/index.js",
   "publishConfig": {

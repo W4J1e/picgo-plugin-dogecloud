@@ -42,20 +42,20 @@ export = (ctx: picgo) => {
         alias: '应用密钥'
       },
       {
-        name: 'bucketName',
-        type: 'input',
-        default: userConfig.bucketName,
-        required: true,
-        alias: '存储桶'
-      },
-      {
         name: 'sessionToken',
         type: 'password',
         default: userConfig.sessionToken,
         required: true,
         message: 'sessionToken',
         alias: '会话令牌'
-      },        
+      },       
+      {
+        name: 'bucketName',
+        type: 'input',
+        default: userConfig.bucketName,
+        required: true,
+        alias: '存储桶'
+      },       
       {
         name: 'uploadPath',
         type: 'input',
