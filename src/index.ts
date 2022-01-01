@@ -28,7 +28,7 @@ export = (ctx: picgo) => {
       {
         name: 'accessKeyID',
         type: 'input',
-        default: userConfig.accessKeyId,
+        default: userConfig.accessKeyID,
         required: true,
         message: 'accessKeyId',
         alias: '应用密钥ID'
