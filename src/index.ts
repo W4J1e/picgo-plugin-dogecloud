@@ -68,7 +68,7 @@ export = (ctx: picgo) => {
       type: 'input',
       default: userConfig.acl,
       message: '文件访问权限',
-      required: true,
+      required: false,
       alias: '权限'
       },
       {
