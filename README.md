@@ -10,9 +10,9 @@
 
 Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的代码示例](https://docs.dogecloud.com/oss/manual-tmp-token)以供用户获取密钥。
 
-文档解释，临时密钥由`accessKeyId` `secretAccessKey` `sessionToken`三个字段组成，最长 2 小时有效期，如有其它需求，可以用 Redis 缓存临时密钥。
+文档解释，临时密钥由`accessKeyId` `secretAccessKey` `sessionToken`三个字段组成，最长 2 小时有效期，如有其它需求，可以用 Redis 缓存临时密钥（个人客户端使用意义不大）。
 
-以python获取为例，获取到的信息包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` ，其中，后两项在云存储控制台的SDK参数也可找到。
+以python获取为例，获取到的信息包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录。
 
 ![dogecloudtoken](https://cdn.hin.cool/pic/s3test/dogecloudtoken.jpg)
 
@@ -20,14 +20,13 @@ Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的�
 
 | Key               | 说明                          | 例子                               |
 | ----------------- | ----------------------------- | ---------------------------------- |
-| `accessKeyID`     | AWS 凭证 ID                   |                                    |
-| `secretAccessKey` | AWS 凭证密钥                  |                                    |
+| `accessKeyID`     | 多吉云凭证 ID                   |                                    |
+| `secretAccessKey` | 多吉云凭证密钥                  |                                    |
 | `sessionToken` | 多吉云临时会话令牌 | |
-| `bucketName`      | S3 桶名称                     | `s-gz-2384-xxxxxxx`                   |
+| `bucketName`      | 多吉云存储桶名称                | `s-gz-2384-xxxxxxx`                   |
 | `uploadPath`      | 上传路径                      | `{year}/{month}/{fullName}`        |
-| `urlPrefix`       | 最终生成图片 URL 的自定义前缀 | `https://img.example.com/my-blog/` |
+| `urlPrefix`       | 最终生成图片 URL 的自定义前缀 | `https://img.example.com/` |
 | `endpoint`        | 指定自定义终端节点            | `https://cos.ap-guangzhou.myqcloud.com`       |
-| `acl` | 访问控制列表(应该无需此项) | `public-read` |
 
 **上传路径支持 payload：**
 

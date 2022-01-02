@@ -8,7 +8,6 @@ interface IS3UserConfig {
   sessionToken: string
   bucketName: string
   uploadPath: string
-  acl?: string
   endpoint?: string
   urlPrefix?: string
 }
@@ -64,14 +63,6 @@ export = (ctx: picgo) => {
         alias: '文件路径'
       },
       {
-      name: 'acl',
-      type: 'input',
-      default: userConfig.acl,
-      message: '文件访问权限',
-      required: false,
-      alias: '权限'
-      },
-      {
         name: 'endpoint',
         type: 'input',
         default: userConfig.endpoint,
@@ -113,8 +104,7 @@ export = (ctx: picgo) => {
         userConfig.bucketName,
         formatPath(item, userConfig.uploadPath),
         item,
-        idx,
-        userConfig.acl
+        idx
       )
     )
 

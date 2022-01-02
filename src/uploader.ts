@@ -30,7 +30,6 @@ function createUploadTask(
   path: string,
   item: IImgInfo,
   index: number,
-  acl: string
 ): Promise<IUploadResult> {
   return new Promise(async (resolve, reject) => {
     if (!item.buffer && !item.base64Image) {
@@ -42,7 +41,6 @@ function createUploadTask(
     const opts: PutObjectRequest = {
       Key: path,
       Bucket: bucketName,
-      ACL: acl,
       Body: body,
       ContentType: contentType,
       ContentEncoding: contentEncoding,
