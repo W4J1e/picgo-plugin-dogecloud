@@ -6,13 +6,15 @@
 
 多吉云(dogecloud)云存储使用的是腾讯云COS或阿里云OSS作为存储空间的底层服务，支持AWS S3 SDK上传。由于并非自家开发的底层存储服务，所以相较于通用的AWS S3 SDK上传，要多传输一个临时`sessionToken`。而现有的[picgo-plugin-s3](https://github.com/wayjam/picgo-plugin-s3)无法直接使用，因此拿来小小改了一下，感谢开发者[wayjam](https://github.com/wayjam)。
 
+关于此插件的详细说明可见[《PicGo插件：上传到多吉云存储》](https://hin.cool/posts/picgoplugin.html)。
+
 ### 获取配置信息
 
 Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的代码示例](https://docs.dogecloud.com/oss/manual-tmp-token)以供用户获取密钥。
 
 文档解释，临时密钥由`accessKeyId` `secretAccessKey` `sessionToken`三个字段组成，最长 2 小时有效期，如有其它需求，可以用 Redis 缓存临时密钥（个人客户端使用意义不大）。
 
-以python获取为例，获取到的信息包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录。
+以python获取为例，获取到的信息格式为`json`，包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录。
 
 ![dogecloudtoken](https://cdn.hin.cool/pic/s3test/dogecloudtoken.jpg)
 
