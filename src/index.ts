@@ -10,6 +10,7 @@ interface IS3UserConfig {
   uploadPath: string
   endpoint?: string
   urlPrefix?: string
+  urlSuffix?: string
 }
 
 export = (ctx: picgo) => {
@@ -30,7 +31,7 @@ export = (ctx: picgo) => {
         default: userConfig.accessKeyID,
         required: true,
         message: 'accessKeyId',
-        alias: '应用密钥ID'
+        alias: '应用 ID'
       },
       {
         name: 'secretAccessKey',
@@ -54,28 +55,37 @@ export = (ctx: picgo) => {
         default: userConfig.bucketName,
         required: true,
         alias: '存储桶'
-      },       
-      {
-        name: 'uploadPath',
-        type: 'input',
-        default: userConfig.uploadPath,
-        required: true,
-        alias: '文件路径'
-      },
-      {
-        name: 'endpoint',
-        type: 'input',
-        default: userConfig.endpoint,
-        required: false,
-        alias: '自定义节点'
       },
       {
         name: 'urlPrefix',
         type: 'input',
         default: userConfig.urlPrefix,
-        message: 'https://img.example.com/bucket-name/',
+        message: '云存储绑定的cdn域名',
+        required: true,
+        alias: '加速域名'
+      },
+      {
+        name: 'endpoint',
+        type: 'input',
+        default: userConfig.endpoint,
+        required: true,
+        alias: '上传节点'
+      },      
+      {
+        name: 'uploadPath',
+        type: 'input',
+        default: userConfig.uploadPath,
+        message: '为空则以原始文件名上传到根目录',
         required: false,
-        alias: '自定义域名'
+        alias: '上传路径'
+      },
+      {
+        name: 'urlSuffix',
+        type: 'input',
+        default: userConfig.urlSuffix,
+        message: '如开启了图片处理则可以填写此项',
+        required: false,
+        alias: '自定义后缀'
       }
     ]
   }
@@ -118,9 +128,9 @@ export = (ctx: picgo) => {
         output[index].url = url
         output[index].imgUrl = url
 
-        if (userConfig.urlPrefix) {
-          output[index].url = `${userConfig.urlPrefix}/${imgURL}`
-          output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
+        if (userConfig.urlSuffix) {
+          output[index].url = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
+          output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
         }
       }
 

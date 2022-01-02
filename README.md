@@ -14,7 +14,7 @@ Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的�
 
 文档解释，临时密钥由`accessKeyId` `secretAccessKey` `sessionToken`三个字段组成，最长 2 小时有效期，如有其它需求，可以用 Redis 缓存临时密钥（个人客户端使用意义不大）。
 
-以python获取为例，获取到的信息格式为`json`，包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录。
+以python获取为例，获取到的信息格式为`json`，包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录，建议获取临时密钥时允许全局上传。
 
 ![dogecloudtoken](https://cdn.hin.cool/pic/s3test/dogecloudtoken.jpg)
 
@@ -22,15 +22,16 @@ Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的�
 
 | Key               | 说明                          | 例子                               |
 | ----------------- | ----------------------------- | ---------------------------------- |
-| `accessKeyID`     | 多吉云凭证 ID                   |                                    |
-| `secretAccessKey` | 多吉云凭证密钥                  |                                    |
-| `sessionToken` | 多吉云临时会话令牌 | |
-| `bucketName`      | 多吉云存储桶名称                | `s-gz-2384-xxxxxxx`                   |
-| `uploadPath`      | 上传路径                      | `{year}/{month}/{fullName}`        |
-| `urlPrefix`       | 最终生成图片 URL 的自定义前缀 | `https://img.example.com/` |
-| `endpoint`        | 指定自定义终端节点            | `https://cos.ap-guangzhou.myqcloud.com`       |
+| `accessKeyID`     | 应用 ID                 |                                    |
+| `secretAccessKey` | 应用密钥                |                                    |
+| `sessionToken` | 会话令牌 | |
+| `bucketName`      | 存储桶名                | `s-gz-2384-xxxxxxx`                   |
+| `urlPrefix` | 存储空间绑定的CDN域名 | `https://img.example.com` |
+| `endpoint` | 指定上传的终端节点 | `https://cos.ap-guangzhou.myqcloud.com` |
+| `uploadPath` | 上传路径                      | `{year}/{month}/{fullName}`        |
+| `urlSuffix` | 自定义后缀 | `/shuiyin` |
 
-**上传路径支持 payload：**
+**上传路径为空则默认以原始文件名上传到根目录，如指定目录则必需添加 payload：**
 
 | payload      | 描述                   |
 | ------------ | ---------------------- |
