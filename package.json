@@ -1,5 +1,5 @@
 {
-  "name": "picgo-plugin-dogecloud",
+  "name": "picgo-plugin-todogecloud",
   "version": "1.0.1",
   "description": "picgo upload plugin for dogecloud",
   "main": "dist/index.js",
