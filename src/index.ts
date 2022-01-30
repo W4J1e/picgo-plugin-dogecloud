@@ -127,7 +127,10 @@ export = (ctx: picgo) => {
         delete output[index].base64Image
         output[index].url = url
         output[index].imgUrl = url
-
+        
+        if (userConfig.urlPrefix) {
+          output[index].url = `${userConfig.urlPrefix}/${imgURL}`
+          output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
         if (userConfig.urlSuffix) {
           output[index].url = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
           output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
