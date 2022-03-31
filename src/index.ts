@@ -1,24 +1,24 @@
 import picgo from 'picgo'
 import uploader, { IUploadResult } from './uploader'
-import { formatPath } from './utils'
+import { formatPath , dogecloudExecToken} from './utils'
+import * as fs from 'fs';
+
 
 interface IS3UserConfig {
-  accessKeyID: string
-  secretAccessKey: string
-  sessionToken: string
+  AccessKey: string
+  SecretKey: string
   bucketName: string
   uploadPath: string
-  endpoint?: string
   urlPrefix?: string
   urlSuffix?: string
+  forceRefreshToken?: boolean
 }
 
 export = (ctx: picgo) => {
   const config = (ctx: picgo) => {
     const defaultConfig: IS3UserConfig = {
-      accessKeyID: '',
-      secretAccessKey: '',
-      sessionToken: '',
+      AccessKey: '',
+      SecretKey: '',
       bucketName: '',
       uploadPath: '{year}/{month}/{md5}.{extName}',
     }
@@ -26,29 +26,21 @@ export = (ctx: picgo) => {
     userConfig = { ...defaultConfig, ...(userConfig || {}) }
     return [
       {
-        name: 'accessKeyID',
+        name: 'AccessKey',
         type: 'input',
-        default: userConfig.accessKeyID,
+        default: userConfig.AccessKey,
         required: true,
-        message: 'accessKeyId',
-        alias: '应用 ID'
+        message: 'AccessKey',
+        alias: '用户AccessKey'
       },
       {
-        name: 'secretAccessKey',
+        name: 'SecretKey',
         type: 'password',
-        default: userConfig.secretAccessKey,
+        default: userConfig.SecretKey,
         required: true,
-        message: 'secretAccessKey',
-        alias: '应用密钥'
-      },
-      {
-        name: 'sessionToken',
-        type: 'password',
-        default: userConfig.sessionToken,
-        required: true,
-        message: 'sessionToken',
-        alias: '会话令牌'
-      },       
+        message: 'SecretKey',
+        alias: '用户SecretKey'
+      },      
       {
         name: 'bucketName',
         type: 'input',
@@ -63,14 +55,7 @@ export = (ctx: picgo) => {
         message: '云存储绑定的cdn域名',
         required: true,
         alias: '加速域名'
-      },
-      {
-        name: 'endpoint',
-        type: 'input',
-        default: userConfig.endpoint,
-        required: true,
-        alias: '上传节点'
-      },      
+      },     
       {
         name: 'uploadPath',
         type: 'input',
@@ -86,9 +71,19 @@ export = (ctx: picgo) => {
         message: '如开启了图片处理则可以填写此项',
         required: false,
         alias: '自定义后缀'
+      },
+      {
+        name: 'forceRefreshToken',
+        type: 'confirm',
+        default: userConfig.forceRefreshToken || false,
+        message: '强制刷新认证Token',
+        required: false,
+        alias: 'forceRefreshToken'
       }
     ]
   }
+
+
 
   const handle = async (ctx: picgo) => {
     let userConfig: IS3UserConfig = ctx.getConfig('picBed.dogecloud')
@@ -98,14 +93,22 @@ export = (ctx: picgo) => {
     if (userConfig.urlPrefix) {
       userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, '')
     }
-
+    //添加相关项token
+    await dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,userConfig.forceRefreshToken);
+    var f = fs.readFileSync('./token.json','utf-8');
+    var tdata = JSON.parse(f.toString());
+    console.log(tdata);
+    var ak = tdata["credentials"]["accessKeyId"];
+    var ck = tdata["credentials"]["secretAccessKey"];
+    var stk = tdata["credentials"]["sessionToken"];
+    var edp = tdata["s3Endpoint"];
+    var bk = tdata["s3Bucket"];
     const client = uploader.createS3Client(
-      userConfig.accessKeyID,
-      userConfig.secretAccessKey,
-      userConfig.sessionToken,
-      userConfig.endpoint,
+      ak,
+      ck,
+      stk,
+      edp,
     )
-
     const output = ctx.output
 
     const tasks = output.map((item, idx) =>
