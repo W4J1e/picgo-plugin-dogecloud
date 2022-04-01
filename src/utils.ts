@@ -147,6 +147,7 @@ export async function dogecloudExecToken(accessKey:string,secretKey:string,_buck
         await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
       }
     }else{
+      await getRet({});
       await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
     }
   }catch(err){
