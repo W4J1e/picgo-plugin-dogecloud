@@ -94,9 +94,8 @@ export = (ctx: picgo) => {
       userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, '')
     }
     //添加相关项token
-    if(!fs.existsSync('./token.json')){
+    if(!fs.existsSync('./token.json')){//如果不存在token，将强制写入。
       await dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,true);
-
     }else{
       await dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,userConfig.forceRefreshToken);
 
