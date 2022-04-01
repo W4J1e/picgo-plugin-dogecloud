@@ -2,8 +2,8 @@ import crypto from 'crypto'
 import FileType from 'file-type'
 import mime from 'mime'
 import { IImgInfo } from 'picgo/dist/src/types'
-import picgo from 'picgo'
 import * as fs from 'fs';
+import request from 'request';
 
 class FileNameGenerator {
   date: Date
@@ -167,8 +167,7 @@ async function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ,c
   var signStr = apiUrl + '\n' + bodyJSON;
   var sign = crypto.createHmac('sha1', secretKey).update(Buffer.from(signStr, 'utf8')).digest('hex');
   var authorization = 'TOKEN ' + accessKey + ':' + sign;  
-  var ctx = new picgo;
-  await ctx.Request.request({
+  await request({
       url: 'https://api.dogecloud.com' + apiUrl,
       method: 'POST',
       body: bodyJSON,
