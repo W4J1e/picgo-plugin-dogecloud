@@ -2,6 +2,8 @@ import crypto from 'crypto'
 import FileType from 'file-type'
 import mime from 'mime'
 import { IImgInfo } from 'picgo/dist/src/types'
+import * as fs from 'fs';
+import request from 'request';
 
 class FileNameGenerator {
   date: Date
@@ -118,4 +120,77 @@ export async function extractInfo(info: IImgInfo): Promise<{
   }
 
   return result
+}
+
+export async function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:string ,force=false){
+  function getRet(ret:any){
+    fs.writeFileSync('./token.json',ret);
+
+  }
+  try{
+    if(fs.existsSync('./token.json')){
+      //console.log("文件存在");
+      //判断token的时间和是否修改过_bucket
+      var fst = fs.statSync('./token.json');
+      var fsr = fs.readFileSync('./token.json','utf-8');
+      var r = JSON.parse(fsr.toString())
+      var r_bucket = r['s3Bucket']
+      var diff = (fst.mtimeMs - Date.now())/1000;
+      if(_bucket == r_bucket){
+        var bucketEqual = true;
+      }else{
+        var bucketEqual = false;
+      }
+
+      if(diff >= 7000 || !bucketEqual || force){
+        fs.unlinkSync('./token.json');
+        await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
+      }
+    }else{
+      await getRet({});
+      await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
+    }
+  }catch(err){
+    console.log("创建新的文件token。");
+    await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
+  }
+}
+
+
+async function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ,callback) {
+  var bucket_name = _bucket.split("-")[3]
+  var bodyJSON = JSON.stringify({
+      channel: 'OSS_UPLOAD',
+      scopes: [bucket_name + ':'+'*'] //在_bucket位置上报错，这里用的是name，不是s3bucket,uploadpath是规则写法，不是对应位置
+  });
+  var apiUrl = '/auth/tmp_token.json'; // 此 tmp_token API 的文档：https://docs.dogecloud.com/oss/api-tmp-token
+  var signStr = apiUrl + '\n' + bodyJSON;
+  var sign = crypto.createHmac('sha1', secretKey).update(Buffer.from(signStr, 'utf8')).digest('hex');
+  var authorization = 'TOKEN ' + accessKey + ':' + sign;  
+  await request({
+      url: 'https://api.dogecloud.com' + apiUrl,
+      method: 'POST',
+      body: bodyJSON,
+      headers: {
+          'Content-Type': 'application/json',
+          'Authorization': authorization
+      }
+  }, dogeAnswer);//回调dogeAnswer，此函数内可以获取data值做后续处理。
+  function dogeAnswer (err, response, body): any {
+    if (err) { console.log('Request Error');} // request 错误
+    body = JSON.parse(body);
+    if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); } // API 返回错误
+    var bdata = body.data;
+    var dataBuckets = bdata.Buckets //匹配这个_bucket
+    var targetBuckets = dataBuckets.filter(function(fp){return fp.s3Bucket==_bucket;})
+    var ret = {
+        credentials: bdata.Credentials,
+        //s3Bucket: data.Buckets[0].s3Bucket, //这里默认了第一个存储桶是值
+        //获取的filter仍然是[]格式
+        s3Bucket: targetBuckets[0].s3Bucket,
+        s3Endpoint : targetBuckets[0].s3Endpoint,
+    };
+    console.log(JSON.stringify(ret)); // 成功
+    callback(JSON.stringify(ret));
+  }
 }
