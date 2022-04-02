@@ -123,7 +123,6 @@ export async function extractInfo(info: IImgInfo): Promise<{
 }
 
 export function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:string ,force=false){
-  return new Promise((resolve)=>{
     try{
       if(fs.existsSync('./token.json')){
         //console.log("文件存在");
@@ -140,6 +139,7 @@ export function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:str
         }
   
         if(diff >= 7000 || !bucketEqual || force){
+          fs.unlinkSync('./token.json');
           dogecloudAuth(accessKey,secretKey,_bucket);
         }
       }else{
@@ -149,8 +149,8 @@ export function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:str
       console.log("创建新的文件token。");
       dogecloudAuth(accessKey,secretKey,_bucket);
     }
-  });
 }
+
 
 
 function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ) {
@@ -187,7 +187,6 @@ function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ) {
         s3Endpoint : targetBuckets[0].s3Endpoint,
     };
     console.log(JSON.stringify(ret)); // 成功
-    fs.unlinkSync('./token.json');
     fs.writeFileSync('./token.json', JSON.stringify(ret));
   }
 }
