@@ -122,42 +122,38 @@ export async function extractInfo(info: IImgInfo): Promise<{
   return result
 }
 
-export async function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:string ,force=false){
-  function getRet(ret:any){
-    fs.writeFileSync('./token.json',ret);
-
-  }
-  try{
-    if(fs.existsSync('./token.json')){
-      //console.log("文件存在");
-      //判断token的时间和是否修改过_bucket
-      var fst = fs.statSync('./token.json');
-      var fsr = fs.readFileSync('./token.json','utf-8');
-      var r = JSON.parse(fsr.toString())
-      var r_bucket = r['s3Bucket']
-      var diff = (fst.mtimeMs - Date.now())/1000;
-      if(_bucket == r_bucket){
-        var bucketEqual = true;
+export function dogecloudExecToken(accessKey:string,secretKey:string,_bucket:string ,force=false){
+  return new Promise((resolve)=>{
+    try{
+      if(fs.existsSync('./token.json')){
+        //console.log("文件存在");
+        //判断token的时间和是否修改过_bucket
+        var fst = fs.statSync('./token.json');
+        var fsr = fs.readFileSync('./token.json','utf-8');
+        var r = JSON.parse(fsr.toString())
+        var r_bucket = r['s3Bucket']
+        var diff = (fst.mtimeMs - Date.now())/1000;
+        if(_bucket == r_bucket){
+          var bucketEqual = true;
+        }else{
+          var bucketEqual = false;
+        }
+  
+        if(diff >= 7000 || !bucketEqual || force){
+          dogecloudAuth(accessKey,secretKey,_bucket);
+        }
       }else{
-        var bucketEqual = false;
+        dogecloudAuth(accessKey,secretKey,_bucket);
       }
-
-      if(diff >= 7000 || !bucketEqual || force){
-        fs.unlinkSync('./token.json');
-        await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
-      }
-    }else{
-      await getRet({});
-      await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
+    }catch(err){
+      console.log("创建新的文件token。");
+      dogecloudAuth(accessKey,secretKey,_bucket);
     }
-  }catch(err){
-    console.log("创建新的文件token。");
-    await dogecloudAuth(accessKey,secretKey,_bucket,getRet);
-  }
+  });
 }
 
 
-async function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ,callback) {
+function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ) {
   var bucket_name = _bucket.split("-")[3]
   var bodyJSON = JSON.stringify({
       channel: 'OSS_UPLOAD',
@@ -167,7 +163,7 @@ async function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ,c
   var signStr = apiUrl + '\n' + bodyJSON;
   var sign = crypto.createHmac('sha1', secretKey).update(Buffer.from(signStr, 'utf8')).digest('hex');
   var authorization = 'TOKEN ' + accessKey + ':' + sign;  
-  await request({
+  request({
       url: 'https://api.dogecloud.com' + apiUrl,
       method: 'POST',
       body: bodyJSON,
@@ -191,6 +187,7 @@ async function dogecloudAuth(accessKey:string,secretKey:string,_bucket:string ,c
         s3Endpoint : targetBuckets[0].s3Endpoint,
     };
     console.log(JSON.stringify(ret)); // 成功
-    callback(JSON.stringify(ret));
+    fs.unlinkSync('./token.json');
+    fs.writeFileSync('./token.json', JSON.stringify(ret));
   }
 }
