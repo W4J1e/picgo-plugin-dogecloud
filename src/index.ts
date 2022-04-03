@@ -3,7 +3,6 @@ import uploader, { IUploadResult } from './uploader'
 import { formatPath , dogecloudExecToken} from './utils'
 import * as fs from 'fs';
 
-
 interface IS3UserConfig {
   AccessKey: string
   SecretKey: string
@@ -14,7 +13,100 @@ interface IS3UserConfig {
   forceRefreshToken?: boolean
 }
 
-export = (ctx: picgo) => {
+
+
+
+
+const handle = async (ctx: picgo) => {
+  let userConfig: IS3UserConfig = ctx.getConfig('picBed.dogecloud')
+  if (!userConfig) {
+    throw new Error("Can't find dogecloud uploader config")
+  }
+  if (userConfig.urlPrefix) {
+    userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, '')
+  }
+
+  var refreshToken = false ;
+  //添加相关项token
+  if(!fs.existsSync('./token.json')){//如果不存在token，将强制写入。
+    refreshToken=true;
+  }else{
+    refreshToken = userConfig.forceRefreshToken;
+  }
+  dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,true,function(response){console.log(response)});
+
+//异步线程，，这个的执行默认会放在最后
+
+
+  // var i:number;
+  // for(i = 0 ; i <=16;i++){
+  //   sleep(240);
+  //   try{
+  //     
+  //     break;
+  //  }catch(err){
+  //     console.log("循环读取token")
+  //  }
+  // }
+  var f = fs.readFileSync('./token.json','utf-8');
+  var tdata = JSON.parse(f.toString());
+  console.log(tdata);
+  var ak = tdata["credentials"]["accessKeyId"];
+  var ck = tdata["credentials"]["secretAccessKey"];
+  var stk = tdata["credentials"]["sessionToken"];
+  var edp = tdata["s3Endpoint"];
+  var bk = tdata["s3Bucket"];
+  const client = uploader.createS3Client(
+    ak,
+    ck,
+    stk,
+    edp,
+  )
+  const output = ctx.output
+
+  const tasks = output.map((item, idx) =>
+    uploader.createUploadTask(
+      client,
+      userConfig.bucketName,
+      formatPath(item, userConfig.uploadPath),
+      item,
+      idx
+    )
+  )
+
+  try {
+    const results: IUploadResult[] = await Promise.all(tasks)
+    for (let result of results) {
+      const { index, url, imgURL } = result
+
+      delete output[index].buffer
+      delete output[index].base64Image
+      output[index].url = url
+      output[index].imgUrl = url
+      
+      if (userConfig.urlSuffix) {
+        output[index].url = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
+        output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
+      } else {
+        output[index].url = `${userConfig.urlPrefix}/${imgURL}`
+        output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
+      }
+
+    }
+
+    return ctx
+  } catch (err) {
+    ctx.log.error('上传到 dogecloud 发生错误，请检查配置是否正确')
+    ctx.log.error(err)
+    ctx.emit('notification', {
+      title: 'dogecloud 上传错误',
+      body: '请检查配置是否正确',
+      text: ''
+    })
+    throw err
+  }
+} 
+
   const config = (ctx: picgo) => {
     const defaultConfig: IS3UserConfig = {
       AccessKey: '',
@@ -84,95 +176,15 @@ export = (ctx: picgo) => {
   }
 
 
-
-  const handle = async (ctx: picgo) => {
-    let userConfig: IS3UserConfig = ctx.getConfig('picBed.dogecloud')
-    if (!userConfig) {
-      throw new Error("Can't find dogecloud uploader config")
-    }
-    if (userConfig.urlPrefix) {
-      userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, '')
-    }
-    
-    //添加相关项token
-    if(!fs.existsSync('./token.json')){//如果不存在token，将强制写入。
-      await dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,true);
-    }else{
-      await dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,userConfig.forceRefreshToken);
-
-    }
-    try{
-      var f = fs.readFileSync('./token.json','utf-8');
-    }catch(err){
-      var f = fs.readFileSync('./token.json','utf-8');
-
-    }
-    var tdata = JSON.parse(f.toString());
-    console.log(tdata);
-    var ak = tdata["credentials"]["accessKeyId"];
-    var ck = tdata["credentials"]["secretAccessKey"];
-    var stk = tdata["credentials"]["sessionToken"];
-    var edp = tdata["s3Endpoint"];
-    var bk = tdata["s3Bucket"];
-    const client = uploader.createS3Client(
-      ak,
-      ck,
-      stk,
-      edp,
-    )
-    const output = ctx.output
-
-    const tasks = output.map((item, idx) =>
-      uploader.createUploadTask(
-        client,
-        userConfig.bucketName,
-        formatPath(item, userConfig.uploadPath),
-        item,
-        idx
-      )
-    )
-
-    try {
-      const results: IUploadResult[] = await Promise.all(tasks)
-      for (let result of results) {
-        const { index, url, imgURL } = result
-
-        delete output[index].buffer
-        delete output[index].base64Image
-        output[index].url = url
-        output[index].imgUrl = url
-        
-        if (userConfig.urlSuffix) {
-          output[index].url = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
-          output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
-        } else {
-          output[index].url = `${userConfig.urlPrefix}/${imgURL}`
-          output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
-        }
-
-      }
-
-      return ctx
-    } catch (err) {
-      ctx.log.error('上传到 dogecloud 发生错误，请检查配置是否正确')
-      ctx.log.error(err)
-      ctx.emit('notification', {
-        title: 'dogecloud 上传错误',
-        body: '请检查配置是否正确',
-        text: ''
+  module.exports = (ctx) => {
+    const register = () => {
+      ctx.helper.uploader.register('dogecloud', {
+        handle,
+        config,
+        name: 'Dogecloud'
       })
-      throw err
+    }
+    return {
+      register,
     }
   }
-
-  const register = () => {
-    ctx.helper.uploader.register('dogecloud', {
-      handle,
-      config,
-      name: 'Dogecloud'
-    })
-  }
-  return {
-    register
-  }
-}
