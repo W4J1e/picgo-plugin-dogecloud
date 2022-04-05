@@ -2,34 +2,33 @@
 
 [PicGo](https://github.com/PicGo/PicGo-Core) 多吉云(dogecloud)上传插件。支持 PicGo GUI 。
 
-### 说明
-
-多吉云(dogecloud)云存储使用的是腾讯云COS或阿里云OSS作为存储空间的底层服务，支持AWS S3 SDK上传。由于并非自家开发的底层存储服务，所以相较于通用的AWS S3 SDK上传，要多传输一个临时`sessionToken`。而现有的[picgo-plugin-s3](https://github.com/wayjam/picgo-plugin-s3)无法直接使用，因此拿来小小改了一下，感谢开发者[wayjam](https://github.com/wayjam)。
+多吉云(dogecloud)云存储使用的是腾讯云COS或阿里云OSS作为存储空间的底层服务，支持AWS S3 SDK上传。~~由于并非自家开发的底层存储服务，所以相较于通用的AWS S3 SDK上传，要多传输一个临时`sessionToken`~~。而现有的[picgo-plugin-s3](https://github.com/wayjam/picgo-plugin-s3)无法直接使用，因此拿来小小改了一下，感谢前任开发者[wayjam](https://github.com/wayjam)。
 
 关于此插件的详细说明可见[《PicGo插件：上传到多吉云存储》](https://hin.cool/posts/picgoplugin.html)。
 
-### 获取配置信息
+## 特别鸣谢
 
-Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的代码示例](https://docs.dogecloud.com/oss/manual-tmp-token)以供用户获取密钥。
+**特别感谢开发者[@mingxuan](https://github.com/yabostone)对本插件的杰出贡献，从而大大简化了使用本插件的流程。**
 
-文档解释，临时密钥由`accessKeyId` `secretAccessKey` `sessionToken`三个字段组成，最长 2 小时有效期，如有其它需求，可以用 Redis 缓存临时密钥（个人客户端使用意义不大）。
+## 获取参数
 
-以python获取为例，获取到的信息格式为`json`，包含：`accessKeyId` `secretAccessKey` `sessionToken` `s3Bucket` `s3Endpoint` 和`keyPrefix`，其中，第四五项在云存储控制台的SDK参数也可找到，第六项为请求临时密钥时设定的允许上传的目录，建议获取临时密钥时允许全局上传。
+1.在[密钥管理](https://console.dogecloud.com/user/keys)页面获取`AccessKey`和`SecretKey`；
 
-![dogecloudtoken](https://cdn.hin.cool/pic/s3test/dogecloudtoken.jpg)
+2.在`云存储`中选择对应的`空间列表`，点击右侧`SDK参数`，记录`s3Bucket`；
 
 ### 填入配置
 
 | Key               | 说明                          | 例子                               |
 | ----------------- | ----------------------------- | ---------------------------------- |
-| `accessKeyID`     | 应用 ID                 |                                    |
-| `secretAccessKey` | 应用密钥                |                                    |
-| `sessionToken` | 会话令牌 | |
+| `AccessKey`    | 用户AccessKey      | 1v80b5xxxxx9sc9b0 |
+| `SecretKey` | 用户SecretKey   | 6adcaf272xxxxxxxx52f26ddsad244cb |
 | `bucketName`      | 存储桶名                | `s-gz-2384-xxxxxxx`                   |
 | `urlPrefix` | 存储空间绑定的CDN域名 | `https://img.example.com` |
-| `endpoint` | 指定上传的终端节点 | `https://cos.ap-guangzhou.myqcloud.com` |
 | `uploadPath` | 上传路径                      | `{year}/{month}/{fullName}`        |
 | `urlSuffix` | 自定义后缀 | `/shuiyin` |
+| `forceRefreshToken` | 是否强制刷新Token |  |
+
+![填写图示](https://user-images.githubusercontent.com/74824162/161233133-c80757f2-fb5c-4bcf-8134-67eb1b2a8b6b.jpg)
 
 **上传路径为空则默认以原始文件名上传到根目录，如指定目录则必需添加 payload：**
 
@@ -45,18 +44,18 @@ Dogecloud关于云存储的文档相当详细，并且提供了一些[现成的�
 | `{sha1}`     | 图片 SHA1 计算值       |
 | `{sha256}`   | 图片 SHA256 计算值     |
 
+
+
 ### 示例
 
 GUI端配置参考上方“配置”，忽略此项。
 
 ```json
     "dogecloud": {
-      "accessKeyID": "xxx",
-      "secretAccessKey": "xxxxx",
-      "sessionToken": "xxxxx",
+      "AccessKey": "xxxxxxx",
+      "SecretKey": "xxxxxxxxxxxx",
       "bucketName": "s-gz-2384-xxxxxxx",
       "uploadPath": "{year}/{md5}.{extName}",
-      "endpoint": "https://cos.ap-guangzhou.myqcloud.com",
       "urlPrefix": "https://img.example.com/"
     }
 ```
