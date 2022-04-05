@@ -1,7 +1,9 @@
 import picgo from 'picgo'
 import uploader, { IUploadResult } from './uploader'
-import { formatPath , dogecloudExecToken} from './utils'
+import { formatPath} from './utils'
 import * as fs from 'fs';
+import crypto from 'crypto'
+
 
 interface IS3UserConfig {
   AccessKey: string
@@ -33,21 +35,88 @@ const handle = async (ctx: picgo) => {
   }else{
     refreshToken = userConfig.forceRefreshToken;
   }
-  dogecloudExecToken(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName,true,function(response){console.log(response)});
+  const getTokenStruct = (accessKey:string,secretKey:string,_bucket:string) =>{
+    var bucket_name = _bucket.split("-")[3]
+    var bodyJSON = JSON.stringify({
+      channel: 'OSS_UPLOAD',
+      scopes: [bucket_name + ':'+'*'] //在_bucket位置上报错，这里用的是name，不是s3bucket,uploadpath是规则写法，不是对应位置
+  });
+    var apiUrl = '/auth/tmp_token.json'; // 此 tmp_token API 的文档：https://docs.dogecloud.com/oss/api-tmp-token
+    var signStr = apiUrl + '\n' + bodyJSON;
+    var sign = crypto.createHmac('sha1', secretKey).update(Buffer.from(signStr, 'utf8')).digest('hex');
+    var authorization = 'TOKEN ' + accessKey + ':' + sign;  
+    var url = 'https://api.dogecloud.com' + apiUrl;
+    console.log(url)
+    return {
+      'method': 'POST',
+      'uri': url,
+      'headers': {
+        'Content-Type': 'application/json',
+        'Authorization': authorization
+      },
+      'body': bodyJSON 
+    }
+  }
+//开始判断是否需要更新token
+  try{
+    if(fs.existsSync('./token.json')){
+      //console.log("文件存在");
+      //判断token的时间和是否修改过_bucket
+      var fst = fs.statSync('./token.json');
+      var fsr = fs.readFileSync('./token.json','utf-8');
+      var r = JSON.parse(fsr.toString())
+      var r_bucket = r['s3Bucket']
+      var diff = (fst.mtimeMs - Date.now())/1000;
+      if(userConfig.bucketName == r_bucket){
+        var bucketEqual = true;
+      }else{
+        var bucketEqual = false;
+      }
 
-//异步线程，，这个的执行默认会放在最后
+      if(diff >= 7000 || !bucketEqual || refreshToken){
+        fs.unlinkSync('./token.json');
+        const tokenResponse = await ctx.Request.request(getTokenStruct(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName));
+        console.log("sync_post..")
+        var body = JSON.parse(tokenResponse);
+        if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); } // API 返回错误
+        var bdata = body.data;
+        var dataBuckets = bdata.Buckets //匹配这个_bucket
+        var targetBuckets = dataBuckets.filter(function(fp){return fp.s3Bucket==userConfig.bucketName;})
+        var ret = {
+            credentials: bdata.Credentials,
+            //s3Bucket: data.Buckets[0].s3Bucket, //这里默认了第一个存储桶是值
+            //获取的filter仍然是[]格式
+            s3Bucket: targetBuckets[0].s3Bucket,
+            s3Endpoint : targetBuckets[0].s3Endpoint,
+        };
+        console.log(JSON.stringify(ret)); // 成功
+        fs.writeFileSync('./token.json', JSON.stringify(ret));
+      }
+    }else{
+      const tokenResponse = await ctx.Request.request(getTokenStruct(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName));
+      console.log(tokenResponse)
+      body = JSON.parse(tokenResponse);
+      if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); } // API 返回错误
+      var bdata = body.data;
+      var dataBuckets = bdata.Buckets //匹配这个_bucket
+      var targetBuckets = dataBuckets.filter(function(fp){return fp.s3Bucket==userConfig.bucketName;})
+      var ret = {
+          credentials: bdata.Credentials,
+          //s3Bucket: data.Buckets[0].s3Bucket, //这里默认了第一个存储桶是值
+          //获取的filter仍然是[]格式
+          s3Bucket: targetBuckets[0].s3Bucket,
+          s3Endpoint : targetBuckets[0].s3Endpoint,
+      };
+      console.log(JSON.stringify(ret)); // 成功
+      fs.writeFileSync('./token.json', JSON.stringify(ret));
 
+    }
+  }catch(err){
+    console.log("创建新的文件token失败。");
 
-  // var i:number;
-  // for(i = 0 ; i <=16;i++){
-  //   sleep(240);
-  //   try{
-  //     
-  //     break;
-  //  }catch(err){
-  //     console.log("循环读取token")
-  //  }
-  // }
+  }
+  
+  
   var f = fs.readFileSync('./token.json','utf-8');
   var tdata = JSON.parse(f.toString());
   console.log(tdata);
