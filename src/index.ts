@@ -29,7 +29,7 @@ const handle = async (ctx: picgo) => {
   }
 
   var refreshToken = false ;
-  //添加相关项token
+
   if(!fs.existsSync('./token.json')){//如果不存在token，将强制写入。
     refreshToken=true;
   }else{
@@ -76,7 +76,6 @@ const handle = async (ctx: picgo) => {
       if(diff >= 7000 || !bucketEqual || refreshToken){
         fs.unlinkSync('./token.json');
         const tokenResponse = await ctx.Request.request(getTokenStruct(userConfig.AccessKey,userConfig.SecretKey,userConfig.bucketName));
-        console.log("sync_post..")
         var body = JSON.parse(tokenResponse);
         if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); } // API 返回错误
         var bdata = body.data;
@@ -116,9 +115,12 @@ const handle = async (ctx: picgo) => {
 
   }
   
-  
-  var f = fs.readFileSync('./token.json','utf-8');
-  var tdata = JSON.parse(f.toString());
+  try{
+    var f = fs.readFileSync('./token.json','utf-8');
+    var tdata = JSON.parse(f.toString());
+  }catch(err){
+    tdata = ret;
+  }
   console.log(tdata);
   var ak = tdata["credentials"]["accessKeyId"];
   var ck = tdata["credentials"]["secretAccessKey"];
