@@ -1,6 +1,6 @@
 {
-  "name": "picgo-plugin-dogecloud-extra",
-  "version": "1.0.13",
+  "name": "picgo-plugin-dogecloud",
+  "version": "3.1.5",
   "description": "picgo upload plugin for dogecloud",
   "main": "dist/index.js",
   "publishConfig": {
@@ -23,7 +23,8 @@
     "picgo-gui-plugin",
     "picgo-plugin"
   ],
-  "author": "git4xuan",
+  "author": "W4J1e",
+  "contributors": ["mingxuan"],
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^10.10.1",
