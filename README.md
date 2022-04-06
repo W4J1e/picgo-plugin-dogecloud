@@ -10,7 +10,9 @@
 
 **特别感谢开发者[@mingxuan](https://github.com/yabostone)对本插件的杰出贡献，从而大大简化了使用本插件的流程。**
 
-## 获取参数
+## 使用说明
+
+使用本插件的必需条件是，你首先应当创建一个标准存储空间，因为**只有标准存储才支持 SDK 操作**。
 
 1.在[密钥管理](https://console.dogecloud.com/user/keys)页面获取`AccessKey`和`SecretKey`；
 
@@ -26,7 +28,7 @@
 | `urlPrefix` | 存储空间绑定的CDN域名 | `https://img.example.com` |
 | `uploadPath` | 上传路径                      | `{year}/{month}/{fullName}`        |
 | `urlSuffix` | 自定义后缀 | `/shuiyin` |
-| `forceRefreshToken` | 是否强制刷新Token |  |
+| `forceRefreshToken` | 是否强制刷新Token |  每天可调用八千次，建议打开|
 
 ![填写图示](https://user-images.githubusercontent.com/74824162/161233133-c80757f2-fb5c-4bcf-8134-67eb1b2a8b6b.jpg)
 
