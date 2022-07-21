@@ -24,7 +24,7 @@
 | ----------------- | ----------------------------- | ---------------------------------- |
 | `AccessKey`    | 用户AccessKey      | 1v80b5xxxxx9sc9b0 |
 | `SecretKey` | 用户SecretKey   | 6adcaf272xxxxxxxx52f26ddsad244cb |
-| `bucketName`      | 存储桶名                | `s-gz-2384-xxxxxxx`                   |
+| `bucketName`      | s3bucket                | `s-gz-2384-xxxxxxx`                   |
 | `urlPrefix` | 存储空间绑定的CDN域名 | `https://img.example.com` |
 | `uploadPath` | 上传路径                      | `{year}/{month}/{fullName}`        |
 | `urlSuffix` | 自定义后缀 | `/shuiyin` |

@@ -36,7 +36,7 @@ const handle = async (ctx: picgo) => {
     refreshToken = userConfig.forceRefreshToken;
   }
   const getTokenStruct = (accessKey:string,secretKey:string,_bucket:string) =>{
-    var bucket_name = _bucket.split("-")[3]
+    var bucket_name = _bucket.split('-').slice(3, -1).join('-')
     var bodyJSON = JSON.stringify({
       channel: 'OSS_UPLOAD',
       scopes: [bucket_name + ':'+'*'] //在_bucket位置上报错，这里用的是name，不是s3bucket,uploadpath是规则写法，不是对应位置
@@ -209,7 +209,7 @@ const handle = async (ctx: picgo) => {
         type: 'input',
         default: userConfig.bucketName,
         required: true,
-        alias: '存储桶'
+        alias: 's3bucket'
       },
       {
         name: 'urlPrefix',
