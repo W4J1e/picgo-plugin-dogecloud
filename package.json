@@ -24,17 +24,20 @@
     "picgo-plugin"
   ],
   "author": "W4J1e",
-  "contributors": ["mingxuan"],
+  "contributors": [
+    "mingxuan"
+    "dwxh"
+  ],
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^10.10.1",
+    "@types/node": "^18.11.18",
     "eslint": "^5.0.1",
     "eslint-config-standard": "^11.0.0",
     "eslint-plugin-import": "^2.13.0",
     "eslint-plugin-node": "^6.0.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "picgo": "^1.4.0 >1.4.16",
+    "picgo": "^1.5.0",
     "tslint": "^5.10.0",
     "tslint-config-standard": "^7.1.0",
     "typescript": "^3.7.3"
@@ -42,7 +45,6 @@
   "dependencies": {
     "aws-sdk": "^2.839.0",
     "file-type": "^16.2.0",
-    "mime": "^2.5.2",
-    "request": "^2.88.2"
+    "mime": "^2.5.2"
   }
 }

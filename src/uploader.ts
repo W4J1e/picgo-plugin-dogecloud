@@ -1,6 +1,6 @@
 import AWS from 'aws-sdk'
 import { PutObjectRequest } from 'aws-sdk/clients/s3'
-import { IImgInfo } from 'picgo/dist/src/types'
+import { IImgInfo } from 'picgo/dist/types'
 import { extractInfo } from './utils'
 
 export interface IUploadResult {
@@ -9,27 +9,27 @@ export interface IUploadResult {
   index: number
 }
 
-function createS3Client(
+function createS3Client (
   accessKeyID: string,
   secretAccessKey: string,
   sessionToken: string,
-  endpoint: string,
+  endpoint: string
 ): AWS.S3 {
   const s3 = new AWS.S3({
     endpoint,
     accessKeyId: accessKeyID,
     secretAccessKey: secretAccessKey,
-    sessionToken: sessionToken,
+    sessionToken: sessionToken
   })
   return s3
 }
 
-function createUploadTask(
+function createUploadTask (
   s3: AWS.S3,
   bucketName: string,
   path: string,
   item: IImgInfo,
-  index: number,
+  index: number
 ): Promise<IUploadResult> {
   return new Promise(async (resolve, reject) => {
     if (!item.buffer && !item.base64Image) {
@@ -43,7 +43,7 @@ function createUploadTask(
       Bucket: bucketName,
       Body: body,
       ContentType: contentType,
-      ContentEncoding: contentEncoding,
+      ContentEncoding: contentEncoding
     }
 
     s3.upload(opts)

@@ -1,10 +1,7 @@
 import crypto from 'crypto'
 import FileType from 'file-type'
 import mime from 'mime'
-import { IImgInfo } from 'picgo/dist/src/types'
-import * as fs from 'fs';
-import requestSync from "request";
-
+import {IImgInfo} from 'picgo'
 
 class FileNameGenerator {
   date: Date
@@ -91,7 +88,7 @@ export function formatPath (info: IImgInfo, format?: string): string {
   return formatPath
 }
 
-export async function extractInfo(info: IImgInfo): Promise<{
+export async function extractInfo (info: IImgInfo): Promise<{
   body?: Buffer
   contentType?: string
   contentEncoding?: string
@@ -104,7 +101,7 @@ export async function extractInfo(info: IImgInfo): Promise<{
 
   if (info.base64Image) {
     const body = info.base64Image.replace(/^data:[/\w]+;base64,/, '')
-    result.contentType = info.base64Image.match(/[^:]\w+\/[\w-+\d.]+(?=;|,)/)?.[0]
+    result.contentType = info.base64Image.match(/[^:]\w+\/[\w-+\d.]+(?=[;,])/)?.[0]
     result.body = Buffer.from(body, 'base64')
     result.contentEncoding = 'base64'
   } else {
@@ -122,36 +119,3 @@ export async function extractInfo(info: IImgInfo): Promise<{
 
   return result
 }
-
-
-
-/* export function sync_post(accessKey:string,secretKey:string,_bucket:string){
- 
-  return new Promise(function (resolve, reject){
-    requestSync('POST',url,{
-      body: bodyJSON,
-      headers: {
-          'Content-Type': 'application/json',
-          'Authorization': authorization
-      }},function(error,response,body){
-        body = JSON.parse(body);
-        if (body.code !== 200) { console.log(JSON.stringify({error: 'API Error: ' + body.msg})); } // API 返回错误
-        var bdata = body.data;
-        var dataBuckets = bdata.Buckets //匹配这个_bucket
-        var targetBuckets = dataBuckets.filter(function(fp){return fp.s3Bucket==_bucket;})
-        var ret = {
-            credentials: bdata.Credentials,
-            //s3Bucket: data.Buckets[0].s3Bucket, //这里默认了第一个存储桶是值
-            //获取的filter仍然是[]格式
-            s3Bucket: targetBuckets[0].s3Bucket,
-            s3Endpoint : targetBuckets[0].s3Endpoint,
-        };
-        console.log(JSON.stringify(ret)); // 成功
-        fs.writeFileSync('./token.json', JSON.stringify(ret));
-      });
-    })
-  }
- */
-
-
-
