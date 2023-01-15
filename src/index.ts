@@ -11,8 +11,7 @@ interface IS3UserConfig {
   uploadPath: string
   urlPrefix?: string
   urlSuffix?: string
-  forceRefreshToken?: boolean
-}
+}  // forceRefreshToken?: boolean 仿佛是不必要的
 
 export = (ctx: IPicGo) => {
   const getTokenStruct = (accessKey: string, secretKey: string, _bucket: string): IOldReqOptionsWithJSON => {
@@ -97,17 +96,17 @@ export = (ctx: IPicGo) => {
         message: '如开启了图片处理则可以填写此项',
         required: false,
         alias: '自定义后缀'
-      },
-      {
+      }
+    ]
+  }
+/*
         name: 'forceRefreshToken',
         type: 'confirm',
         default: userConfig.forceRefreshToken || false,
         message: '强制刷新认证Token',
         required: false,
         alias: 'forceRefreshToken'
-      }
-    ]
-  }
+*/
 
   const handle = async (ctx: IPicGo) => {
 
@@ -124,7 +123,7 @@ export = (ctx: IPicGo) => {
     if (!fs.existsSync('./token.json')) {// 如果不存在token，将强制写入。
       refreshToken = true
     } else {
-      refreshToken = userConfig.forceRefreshToken
+      refreshToken = false // userConfig.forceRefreshToken 已有判断，故删除相应用户配置
     }
 
     let ret = {}

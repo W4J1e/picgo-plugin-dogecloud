@@ -30,7 +30,7 @@
 | `urlPrefix` | 存储空间绑定的CDN域名 | `https://img.example.com` |
 | `uploadPath` | 上传路径                      | `{year}/{month}/{fullName}`        |
 | `urlSuffix` | 自定义后缀 | `/shuiyin` |
-| `forceRefreshToken` | 是否强制刷新Token |  每天可调用八千次，建议打开|
+| ~~`forceRefreshToken`~~ | ~~是否强制刷新Token~~ | ~~每天可调用八千次，建议打开~~ |
 
 ![填写图示](https://user-images.githubusercontent.com/74824162/161233133-c80757f2-fb5c-4bcf-8134-67eb1b2a8b6b.jpg)
 
@@ -65,6 +65,18 @@ GUI端配置参考上方“配置”，忽略此项。
 ```
 
 如果 PicGo 像以上配置，执行上传：`picgo upload sample.png`，则最终得到图片地址为：`https://img.example.com/2022/4aa4f41e38817e5fd38ac870f40dbc70.jpg`
+
+## TODO:
+
+1.token.json 这个存储方式目前无法生效，建议和 picgo-core 作者讨论研究合适的数据持久化方式。
+
+2.完善上传失败的提示。（L218-L225）
+
+3.AWS.S3 API 过时，需要根据 AWS 的相关文档更新 uploader.ts L19-L22 的使用。
+
+4.完善 uploader.ts L58 失败的提示。
+
+5.完善 index.ts L143 的类型。
 
 ## 发布
 
