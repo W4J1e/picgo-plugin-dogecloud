@@ -1,3 +1,4 @@
+
 import {IOldReqOptionsWithJSON, IPicGo} from 'picgo'
 import uploader, {IUploadResult} from './uploader'
 import {formatPath} from './utils'
@@ -11,20 +12,34 @@ interface IS3UserConfig {
   uploadPath: string
   urlPrefix?: string
   urlSuffix?: string
-}  // forceRefreshToken?: boolean 仿佛是不必要的
+}
+
+interface ITokenData {
+  credentials: {
+    accessKeyId: string
+    secretAccessKey: string
+    sessionToken: string
+  }
+  s3Bucket: string
+  s3Endpoint: string
+  expiresAt?: number
+}
 
 export = (ctx: IPicGo) => {
   const getTokenStruct = (accessKey: string, secretKey: string, _bucket: string): IOldReqOptionsWithJSON => {
-    let bucketName = _bucket.split('-').slice(3, -1).join('-')
-    let bodyJSON = JSON.stringify({
+    const bucketName = _bucket.split('-').slice(3, -1).join('-')
+    const bodyJSON = JSON.stringify({
       channel: 'OSS_UPLOAD',
-      scopes: [bucketName + ':' + '*'] // 在_bucket位置上报错，这里用的是name，不是s3bucket,uploadpath是规则写法，不是对应位置
+      scopes: [bucketName + ':' + '*']
     })
-    let apiUrl = '/auth/tmp_token.json' // 此 tmp_token API 的文档：https://docs.dogecloud.com/oss/api-tmp-token
-    let signStr = apiUrl + '\n' + bodyJSON
-    let sign = crypto.createHmac('sha1', secretKey).update(Buffer.from(signStr, 'utf8')).digest('hex')
-    let authorization = 'TOKEN ' + accessKey + ':' + sign
-    let Url = 'https://api.dogecloud.com' + apiUrl
+    const apiUrl = '/auth/tmp_token.json'
+    const signStr = apiUrl + '\n' + bodyJSON
+    const sign = crypto.createHmac('sha1', secretKey)
+      .update(Buffer.from(signStr, 'utf8'))
+      .digest('hex')
+    const authorization = 'TOKEN ' + accessKey + ':' + sign
+    const Url = 'https://api.dogecloud.com' + apiUrl
+    
     return {
       method: 'POST',
       url: Url,
@@ -49,6 +64,7 @@ export = (ctx: IPicGo) => {
     }
     let userConfig = ctx.getConfig<IS3UserConfig>('picBed.dogecloud')
     userConfig = {...defaultConfig, ...(userConfig || {})}
+    
     return [
       {
         name: 'AccessKey',
@@ -99,18 +115,9 @@ export = (ctx: IPicGo) => {
       }
     ]
   }
-/*
-        name: 'forceRefreshToken',
-        type: 'confirm',
-        default: userConfig.forceRefreshToken || false,
-        message: '强制刷新认证Token',
-        required: false,
-        alias: 'forceRefreshToken'
-*/
 
   const handle = async (ctx: IPicGo) => {
-
-    let userConfig: IS3UserConfig = ctx.getConfig('picBed.dogecloud')
+    const userConfig: IS3UserConfig = ctx.getConfig('picBed.dogecloud')
     if (!userConfig) {
       throw new Error("Can't find dogecloud uploader config")
     }
@@ -118,112 +125,123 @@ export = (ctx: IPicGo) => {
       userConfig.urlPrefix = userConfig.urlPrefix.replace(/\/?$/, '')
     }
 
-    let refreshToken: boolean
-
-    if (!fs.existsSync('./token.json')) {// 如果不存在token，将强制写入。
-      refreshToken = true
-    } else {
-      refreshToken = false // userConfig.forceRefreshToken 已有判断，故删除相应用户配置
-    }
-
-    let ret = {}
-    let needGet = true
-    // 开始判断是否需要更新token
-    if (fs.existsSync('./token.json')) {
-      let diff = (fs.statSync('./token.json').mtimeMs - Date.now()) / 1000
-      ret = JSON.parse(fs.readFileSync('./token.json', 'utf-8').toString())
-
-      if (ret && diff <= 7000 && ret['s3Bucket'] === userConfig.bucketName && refreshToken) {
-        needGet = false
+    const tokenCachePath = require('path').join(ctx.baseDir, 'token.json')
+    let tokenData: ITokenData | null = null
+    
+    // 尝试读取缓存token
+    if (fs.existsSync(tokenCachePath)) {
+      try {
+        const cachedData = JSON.parse(fs.readFileSync(tokenCachePath, 'utf-8'))
+        const tokenAge = (Date.now() - fs.statSync(tokenCachePath).mtimeMs) / 1000
+        
+        if (tokenAge < 3500 && cachedData.s3Bucket === userConfig.bucketName) {
+          tokenData = cachedData
+          ctx.log.info('使用缓存的临时token')
+        }
+      } catch (e) {
+        ctx.log.warn('token缓存读取失败:', e)
       }
     }
 
-    if (needGet) {
-      const tokenResponse: any = await ctx.request(getTokenStruct(userConfig.AccessKey, userConfig.SecretKey, userConfig.bucketName))
-
-      if (tokenResponse.code !== 200) {
-        ctx.log.info('===Start dogecloud error report===')
-        ctx.log.error('获取 token 失败，参考错误：')
-        ctx.log.error(tokenResponse.err_code)
-        ctx.log.error(tokenResponse.msg)
-        ctx.emit('notification', {
-          title: 'dogecloud 上传错误',
-          body: '获取 token 失败，无法继续上传。'
-        })
-        ctx.log.info('===End dogecloud error report===')
-      } else {
-        let body = tokenResponse.data
-        let targetBuckets = body.Buckets.filter(fp => fp.s3Bucket === userConfig.bucketName)
-        ret = {
-          credentials: body.Credentials,
-          s3Bucket: targetBuckets[0].s3Bucket,
-          s3Endpoint: targetBuckets[0].s3Endpoint
-        }
-      }
-
-      if (ret) {
-        // 如果没有获取到临时配置，那么停止上传尝试。
-        try {
-          fs.writeFileSync('./token.json', JSON.stringify(ret))
-        } catch (err) {
-          ctx.log.error('dogecloud 创建新的文件 token 失败。')
-        }
-
-        let ak = ret['credentials']['accessKeyId']
-        let ck = ret['credentials']['secretAccessKey']
-        let stk = ret['credentials']['sessionToken']
-        let edp = ret['s3Endpoint']
-        let bk = ret['s3Bucket']
-        const client = uploader.createS3Client(
-          ak,
-          ck,
-          stk,
-          edp
-        )
-        const output = ctx.output
-
-        const tasks = output.map((item, idx) =>
-          uploader.createUploadTask(
-            client,
-            userConfig.bucketName,
-            formatPath(item, userConfig.uploadPath),
-            item,
-            idx
-          )
-        )
-
-        try {
-          const results: IUploadResult[] = await Promise.all(tasks)
-          for (let result of results) {
-            const {index, url, imgURL} = result
-
-            delete output[index].buffer
-            delete output[index].base64Image
-            output[index].url = url
-            output[index].imgUrl = url
-
-            if (userConfig.urlSuffix) {
-              output[index].url = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
-              output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}${userConfig.urlSuffix}`
-            } else {
-              output[index].url = `${userConfig.urlPrefix}/${imgURL}`
-              output[index].imgUrl = `${userConfig.urlPrefix}/${imgURL}`
+    // 需要刷新token的情况
+    if (!tokenData) {
+      try {
+        interface ITokenResponse {
+          code: number
+          msg?: string
+          err_code?: string
+          data?: {
+            Credentials: {
+              accessKeyId: string
+              secretAccessKey: string
+              sessionToken: string
             }
-
+            Buckets: Array<{
+              s3Bucket: string
+              s3Endpoint: string
+            }>
           }
-
-          return ctx
-        } catch (err) {
-          ctx.log.error('上传到 dogecloud 发生错误，请检查配置是否正确')
-          ctx.log.error(err)
-          ctx.emit('notification', {
-            title: 'dogecloud 上传错误',
-            body: '请检查配置是否正确',
-            text: ''
-          })
-          throw err
         }
+
+        const tokenResponse = await ctx.request(getTokenStruct(
+          userConfig.AccessKey, 
+          userConfig.SecretKey, 
+          userConfig.bucketName
+        )) as ITokenResponse
+        
+        if (tokenResponse.code !== 200 || !tokenResponse.data) {
+          throw new Error(`获取token失败: ${tokenResponse.msg || '未知错误'} (${tokenResponse.err_code || '未知错误码'})`)
+        }
+
+        const targetBucket = tokenResponse.data.Buckets.find(b => b.s3Bucket === userConfig.bucketName)
+        if (!targetBucket) {
+          throw new Error(`未找到配置的存储桶: ${userConfig.bucketName}`)
+        }
+
+        tokenData = {
+          credentials: tokenResponse.data.Credentials,
+          s3Bucket: targetBucket.s3Bucket,
+          s3Endpoint: targetBucket.s3Endpoint,
+          expiresAt: Date.now() + 3500 * 1000
+        }
+
+        fs.writeFileSync(tokenCachePath, JSON.stringify(tokenData))
+      } catch (err) {
+        ctx.emit('notification', {
+          title: 'dogecloud 认证失败',
+          body: err.message
+        })
+        throw err
       }
+    }
+
+    // 执行上传
+    try {
+      const { accessKeyId, secretAccessKey, sessionToken } = tokenData.credentials
+      const client = uploader.createS3Client(
+        accessKeyId,
+        secretAccessKey,
+        sessionToken,
+        tokenData.s3Endpoint
+      )
+
+      const tasks = ctx.output.map((item, idx) =>
+        uploader.createUploadTask(
+          client,
+          userConfig.bucketName,
+          formatPath(item, userConfig.uploadPath),
+          item,
+          idx,
+          tokenData.s3Endpoint
+        )
+      )
+
+      const results = await Promise.all(tasks)
+      results.forEach((result, index) => {
+        const { imgURL } = result
+        const baseUrl = `${userConfig.urlPrefix}/${imgURL}`
+        const fullUrl = userConfig.urlSuffix ? `${baseUrl}${userConfig.urlSuffix}` : baseUrl
+        
+        delete ctx.output[index].buffer
+        delete ctx.output[index].base64Image
+        ctx.output[index].url = fullUrl
+        ctx.output[index].imgUrl = fullUrl
+      })
+
+      return ctx
+    } catch (err) {
+      let message = '上传失败'
+      if (err.message.includes('Credentials')) {
+        message = '凭证无效或已过期'
+      } else if (err.message.includes('Bucket')) {
+        message = '存储桶不存在或无权访问'
+      }
+      
+      ctx.emit('notification', {
+        title: 'dogecloud 上传错误',
+        body: `${message}，请检查配置`
+      })
+      throw err
     }
   }
 
@@ -240,4 +258,3 @@ export = (ctx: IPicGo) => {
     register
   }
 }
-

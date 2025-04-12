@@ -1,6 +1,6 @@
 {
   "name": "picgo-plugin-dogecloud",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "description": "picgo upload plugin for dogecloud",
   "main": "dist/index.js",
   "publishConfig": {
@@ -40,10 +40,10 @@
     "picgo": "^1.5.0",
     "tslint": "^5.10.0",
     "tslint-config-standard": "^7.1.0",
-    "typescript": "^3.7.3"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "aws-sdk": "^2.839.0",
+    "@aws-sdk/client-s3": "^3.787.0",
     "file-type": "^16.2.0",
     "mime": "^2.5.2"
   }

@@ -9,14 +9,7 @@
     "target": "es2017",
     "declaration": true,
     "outDir": "dist",
-    // It's shit.
-    // "baseUrl": "src",
-    // "paths": {
-    //   "@core/*": ["core/*"],
-    //   "@lib/*": ["lib/*"],
-    //   "@plugins/*": ["plugins/*"],
-    //   "@utils/*": ["utils/*"]
-    // },
+    "skipLibCheck": true,
     "lib": [
       "es2017",
       "es2015",
@@ -26,5 +19,8 @@
   },
   "include": [
     "./src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
   ]
 }

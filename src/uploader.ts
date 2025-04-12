@@ -1,5 +1,4 @@
-import AWS from 'aws-sdk'
-import { PutObjectRequest } from 'aws-sdk/clients/s3'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { IImgInfo } from 'picgo/dist/types'
 import { extractInfo } from './utils'
 
@@ -9,54 +8,61 @@ export interface IUploadResult {
   index: number
 }
 
-function createS3Client (
+export function createS3Client(
   accessKeyID: string,
   secretAccessKey: string,
   sessionToken: string,
   endpoint: string
-): AWS.S3 {
-  const s3 = new AWS.S3({
+) {
+  return new S3Client({
     endpoint,
-    accessKeyId: accessKeyID,
-    secretAccessKey: secretAccessKey,
-    sessionToken: sessionToken
+    region: 'auto',
+    credentials: {
+      accessKeyId: accessKeyID,
+      secretAccessKey,
+      sessionToken
+    }
   })
-  return s3
 }
 
-function createUploadTask (
-  s3: AWS.S3,
+export async function createUploadTask(
+  s3: S3Client,
   bucketName: string,
   path: string,
   item: IImgInfo,
-  index: number
+  index: number,
+  endpoint: string
 ): Promise<IUploadResult> {
-  return new Promise(async (resolve, reject) => {
-    if (!item.buffer && !item.base64Image) {
-      reject(new Error('undefined image'))
-    }
+  if (!item.buffer && !item.base64Image) {
+    throw new Error('undefined image')
+  }
 
-    const { body, contentType, contentEncoding } = await extractInfo(item)
+  const { body, contentType, contentEncoding } = await extractInfo(item)
 
-    const opts: PutObjectRequest = {
-      Key: path,
-      Bucket: bucketName,
-      Body: body,
-      ContentType: contentType,
-      ContentEncoding: contentEncoding
-    }
-
-    s3.upload(opts)
-      .promise()
-      .then((result) => {
-        resolve({
-          url: result.Location,
-          imgURL: result.Key,
-          index
-        })
-      })
-      .catch((err) => reject(err))
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: path,
+    Body: body,
+    ContentType: contentType,
+    ContentEncoding: contentEncoding
   })
+
+  try {
+    await s3.send(command)
+    return {
+      url: `${endpoint}/${bucketName}/${path}`,
+      imgURL: path,
+      index
+    }
+  } catch (err) {
+    let message = '上传失败'
+    if (err.name === 'CredentialsError') {
+      message = '凭证无效，请检查AccessKey/SecretKey'
+    } else if (err.name === 'NoSuchBucket') {
+      message = `存储桶不存在: ${bucketName}`
+    }
+    throw new Error(`${message} (${err.code || err.name})`)
+  }
 }
 
 export default {
